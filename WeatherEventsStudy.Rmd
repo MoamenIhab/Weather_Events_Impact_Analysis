@@ -1,0 +1,91 @@
+---
+title: "Most Harmful Weather Events on Population, Health and Economy"
+author: "Moamen Ihab"
+date: "2/6/2020"
+output: html_document
+---
+# Synopsis
+  This Study involves exploring the U.S. National Oceanic and Atmospheric Administration’s (NOAA) storm database. This database tracks characteristics of major storms and weather events in the United States, including when and where they occur, as well as estimates of any fatalities, injuries, and property damage to decide which types of event are most harmful to the population health and economy.
+  
+# Data
+  The Data for this study come in CSV format, i have colleceted the data from year 2000 to the year 2019 from the
+  [Official website of NOAA](https://www.ncdc.noaa.gov/).
+  Each year has its own file so we are going to merge them in data pre-processing phase.
+  
+  The events of the files collected start in the year 2000 and end in late of 2019.
+  
+# Libraries And Setting Used
+```{r, message=FALSE}
+library(plyr)
+library(dplyr)
+library(ggplot2)
+echo = TRUE ## to always make the code visible
+```
+
+# Data Processing
+## Data Pre-Processing
+  The data is divided into a file for each year so for the first step we are going to merge the data together
+  PS(For Research Reproducing) : i Advice to use an online service to merge the csv files because it take too long in R
+```{r}
+## here is a function to merge the data using dplyer package
+multimerge = function(mypath){
+filenames=list.files(path=mypath, full.names=TRUE)
+datalist = lapply(filenames, function(x){read.csv(file=x,header=T)})
+Reduce(function(x,y) {left_join(x,y)}, datalist)}
+```
+## Data Subsetting 
+  Before merging the data i have extracted the data i need from each file to decrease its size here is an example:
+```{r}
+Events2017 <- read.csv("~/Weather_Events_Impact_Analysis/StormEvents_2017.csv", header=TRUE)
+## Thats A little summary and view of the data
+str(Events2017)
+head(Events2017)
+```
+  and here how i extracted the columns i need
+```{r}
+data2017 <- Events2017[, c("STATE", "EVENT_TYPE", "INJURIES_DIRECT", "INJURIES_INDIRECT", "DEATHS_DIRECT", "DEATHS_INDIRECT", "DAMAGE_PROPERTY", "DAMAGE_CROPS")]
+str(data2017)
+head(data2017)
+```
+  Now fot the whole of the years merged in one file called "weatherData.csv"
+```{r}
+WeatherData <- read.csv("~/Weather_Events_Impact_Analysis/WeatherData.csv", header = TRUE)
+str(WeatherData)
+head(WeatherData)
+```
+
+  Now its time to see some results
+  
+# RESULTS:
+## First : Impact On Public Health
+  Checking the top 10 most severe weather events that have an impact on the number of fatalities and injuries
+```{r}
+Pub_Health <- ddply(WeatherData, .(EVENT_TYPE), summarize, Total = sum(INJURIES_DIRECT + INJURIES_INDIRECT + DEATHS_DIRECT + DEATHS_INDIRECT))
+Pub_Health <- Pub_Health[order(Pub_Health$Total, decreasing = T), ]
+TopPH<-Pub_Health[1:10,]
+TopPH
+```
+  And then some Visualization
+```{r}
+ggplot(TopPH, aes(x=EVENT_TYPE, y=Total)) + 
+  geom_bar(stat="identity", width=.5, fill="tomato3") + 
+  labs(title="Weather Events that Impact On Public Health") + 
+  theme(axis.text.x = element_text(angle=65, vjust=0.6))
+```
+
+## Second : Impact On Economy
+  Checking the top 10 most severe weather events that have an impact on the number of property damage
+```{r}
+Eco <- ddply(WeatherData, .(EVENT_TYPE), summarize, Total_Damage = sum(as.numeric(DAMAGE_PROPERTY)))
+Eco <- Eco[order(Eco$Total_Damage, decreasing = T), ]
+TopEco<-Eco[1:10,]
+TopEco
+```
+  And then some Visualization
+```{r}
+ggplot(TopEco, aes(x=EVENT_TYPE, y=Total_Damage)) + 
+  geom_bar(stat="identity", width=.5, fill="tomato3") + 
+  labs(title="Weather Events that Impact On Public Health") + 
+  theme(axis.text.x = element_text(angle=65, vjust=0.6))
+```  
+  
